@@ -1,12 +1,16 @@
 // pages/Login.jsx
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, {  useState } from 'react';
 import backgroundImage from '../assets/uni.jpg';
+import { useAuth } from '../context/authContext';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] =  useState(null)
+  const {login} = useAuth()
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,6 +23,13 @@ const Login = () => {
         console.log("Response: ", response.data); // Debugging log
 
         if (response.data.success){
+          login(response.data.user)
+          localStorage.setItem("token", response.data.token)
+          if (response.data.user.role === "admin"){
+            navigate("/admin-dashboard")
+          }else{
+            navigate("/user-dashboard")
+          }
           alert("Login Sucessfull")
         }
     }catch(error) {
@@ -47,27 +58,29 @@ const Login = () => {
           <p className="text-gray-600 mb-6">Login into your account</p>
           {error && <p className='text-red-500'>{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700">Email Id:</label>
-              <input
-                type="email"
-                placeholder="Enter Email Address"
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full mt-1 p-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              />
-              <span className="absolute left-3 top-10 text-gray-600">✉️</span>
-            </div>
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700">Password</label>
+          <div className="relative flex items-center border border-gray-300 rounded-md">
+            <span className="text-gray-600 pl-3 pr-2">✉️</span>
+            <hr className="h-6 border-l border-gray-300" />
+            <input
+              type="email"
+              placeholder="Enter Email Address"
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 pl-4 border-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
+          </div>
+
+            <div className="relative flex items-center border border-gray-300 rounded-md">
+              <span className="text-gray-600 pl-3 pr-2">🔒</span>
+              <hr className="h-6 border-l border-gray-300" />
               <input
                 type="password"
                 placeholder="Enter your password"
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full mt-1 p-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full p-2 pl-4 border-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
               />
-              <span className="absolute left-3 top-10 text-gray-600">🔒</span>
             </div>
+
             <a href="#" className="block text-right text-sm text-blue-600 hover:underline mt-1">
               Forgot password?
             </a>
@@ -81,6 +94,7 @@ const Login = () => {
               <span className="text-gray-600">OR</span>
               <button
                 type="button"
+                onClick={() => navigate("/signup")}
                 className="mt-2 w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200"
               >
                 Sign up now
