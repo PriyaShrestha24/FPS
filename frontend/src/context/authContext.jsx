@@ -33,9 +33,7 @@ const authContext = ({children}) => {
         }
         verifyUser()
     }, [])
-    // const login = (user) => {
-    //     setUser(user)
-    // }
+
     const login = (user, token) => {
         setUser(user);
         localStorage.setItem("token", token);

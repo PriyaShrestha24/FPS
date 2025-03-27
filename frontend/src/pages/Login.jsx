@@ -32,16 +32,25 @@ const Login = () => {
           }
           alert("Login Sucessfull")
         }
-    }catch(error) {
-      console.error("Error Response: ", error.response); // Debugging log
-      // if (error.response && error.response.data.success){
-      //   setError(error.response.data.error)
-      // } else{
-      //   setError("Server Error")
-      // }
-      setError(error.response.data.error)
+    }catch (error) {
+      console.error("Error Response: ", error.response || error.message);
+      setError(
+        error.response?.data?.error ||
+        (error.code === 'ERR_NETWORK' ? 'Cannot connect to server. Is it running?' : 'Server Error')
+      );
     }
-  }
+  };
+
+  //   }catch(error) {
+  //     console.error("Error Response: ", error.response); // Debugging log
+  //     // if (error.response && error.response.data.success){
+  //     //   setError(error.response.data.error)
+  //     // } else{
+  //     //   setError("Server Error")
+  //     // }
+  //     setError(error.response.data.error)
+  //   }
+  // }
 
   return (
     <div className="flex min-h-screen overflow-hidden relative">
@@ -77,7 +86,7 @@ const Login = () => {
                 placeholder="Enter your password"
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full p-2 pl-4 border-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full *p-2 pl-4 border-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
               />
             </div>
 

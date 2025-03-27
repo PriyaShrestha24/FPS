@@ -86,35 +86,48 @@ const signup = async (req, res) => {
 
 // Fetch all users
 const getAllUsers = async (req, res) => {
-    try {
-      const users = await User.find().select('-password'); // Don't return the password field
+  try {
+      console.log('Fetching users, token:', req.headers.authorization);
+
+      const users = await User.find({}).select('-password'); // Ensure User model is imported correctly
+
+      console.log('Users found:', users);
       res.status(200).json({ success: true, users });
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  };
-  
-  // Update user information
-  const updateUser = async (req, res) => {
+  } catch (error) {
+      console.error('Fetch Users Error:', error); // Log full error object
+      res.status(500).json({ success: false, error: error.message || 'Server Error' });
+  }
+};
+
+
+const updateUser = async (req, res) => {
     try {
       const { userId, name, email, role, studentId, program, year } = req.body;
       const updatedUser = await User.findByIdAndUpdate(
         userId,
         { name, email, role, studentId, program, year },
-        { new: true }
-      );
-      
-      if (!updatedUser) {
-        return res.status(404).json({ success: false, error: 'User not found' });
-      }
-  
+        { new: true, runValidators: true }
+      ).select('-password');
+      if (!updatedUser) return res.status(404).json({ success: false, error: 'User not found' });
       res.status(200).json({ success: true, user: updatedUser });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
     }
   };
-  
- export { getAllUsers, updateUser };
+
+  const deleteUser = async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const deletedUser = await User.findByIdAndDelete(userId);
+      if (!deletedUser) return res.status(404).json({ success: false, error: 'User not found' });
+      res.status(200).json({ success: true, message: 'User deleted' });
+    } catch (error) {
+      console.error('Delete Error:', error);
+      res.status(500).json({ success: false, error: 'Server error' });
+    }
+  };
+
+ export { getAllUsers, updateUser, deleteUser };
   
 
 export { login, verify, signup };
