@@ -41,16 +41,6 @@ const Login = () => {
     }
   };
 
-  //   }catch(error) {
-  //     console.error("Error Response: ", error.response); // Debugging log
-  //     // if (error.response && error.response.data.success){
-  //     //   setError(error.response.data.error)
-  //     // } else{
-  //     //   setError("Server Error")
-  //     // }
-  //     setError(error.response.data.error)
-  //   }
-  // }
 
   return (
     <div className="flex min-h-screen overflow-hidden relative">
