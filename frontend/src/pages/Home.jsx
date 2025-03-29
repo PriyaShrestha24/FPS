@@ -15,20 +15,33 @@ export default function HomePage() {
   return (
     <div className="w-full overflow-x-hidden">
       {/* Navbar */}
-      <nav className="flex justify-between items-center px-10 py-5 bg-white shadow-md">
-        <div className="text-2xl font-bold text-yellow-600">FeeStream</div>
-        <ul className="flex gap-8 text-gray-700 font-medium">
-          <li><a href="#">Home</a></li>
-          <li><a href="#">About</a></li>
-          <li><a href="#">Features</a></li>
-          <li><a href="#">Help</a></li>
-          <li><a href="#">Contact</a></li>
-        </ul>
-        <Link to="/login">
-            <button className="bg-yellow-500 text-white px-5 py-2 rounded">Login</button>
-        </Link>
+      <nav className="bg-white shadow-md px-6 md:px-12 py-4 flex items-center justify-between">
+  {/* Logo */}
+  <div className="text-2xl font-semibold text-gray-800">
+    Fee<span className="text-yellow-500">Stream</span>
+  </div>
 
-      </nav>
+  {/* Center Nav Links */}
+  <ul className="hidden md:flex gap-10 text-sm font-medium text-gray-800">
+    <li><Link to="/">Home</Link></li>
+    <li><Link to="/about">About Us</Link></li>
+    <li><Link to="/make-payment">Make Payment</Link></li>
+    <li><Link to="/statement">Statement</Link></li>
+    <li><Link to="/contact">Contact Us</Link></li>
+  </ul>
+
+  {/* Auth Buttons */}
+  <div className="flex items-center gap-4">
+    <Link to="/login">
+      <span className="font-bold text-sm text-black hover:underline">LOGIN</span>
+    </Link>
+    <Link to="/signup">
+      <button className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-semibold px-4 py-2 rounded">
+        SIGN UP
+      </button>
+    </Link>
+  </div>
+</nav>
 
       
       {/* Hero Section */}

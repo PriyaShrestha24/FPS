@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import backgroundImage from "../assets/uni.jpg"; // Background Image
 
-const programs = ["BSc Computing", "BBA", "BSc Cyber Security", "BSc AI & Data Science"]; // Example courses
+//const programs = ["BSc Computing", "BBA", "BSc Cyber Security", "BSc AI & Data Science"]; // Example courses
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
 
 const Signup = () => {
@@ -21,6 +21,24 @@ const Signup = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
     const [error, setError] = useState(null);
+    
+    const [courseList, setCourseList] = useState([]);
+
+    useEffect(() => {
+    const fetchCourses = async () => {
+        try {
+        const res = await axios.get("http://localhost:5000/api/courses");
+        if (res.data.success) {
+            setCourseList(res.data.courses);
+        }
+        } catch (err) {
+        console.error("Error fetching courses:", err);
+        }
+    };
+
+    fetchCourses();
+    }, []);
+
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -95,9 +113,11 @@ const Signup = () => {
                             <label className="block text-sm font-medium text-gray-700">Program</label>
                             <select name="program" value={formData.program} onChange={handleChange} required
                                 className="w-full mt-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500">
-                                <option value="">Select Course</option>
-                                {programs.map((program, index) => (
-                                    <option key={index} value={program}>{program}</option>
+                                 <option value="">Select Course</option>
+                                {courseList.map((course) => (
+                                <option key={course._id} value={course._id}>
+                                    {course.name}
+                                </option>
                                 ))}
                             </select>
                         </div>

@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: { type: String, enum: ["student", "admin"], default: "student" },
     studentId: { type: String, required: function() { return this.role === "student" } },
-    program: { type: String, required: function() { return this.role === "student" } },
+    //program: { type: String, required: function() { return this.role === "student" } },
+    program: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
     year: {type: String, required: true},
     createAt: {type: Date, default: Date.now},
     updatesAt: {type: Date, default: Date.now}
