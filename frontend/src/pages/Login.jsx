@@ -1,46 +1,57 @@
 // pages/Login.jsx
 import axios from 'axios';
-import React, {  useState } from 'react';
+import React, {  useState, useEffect } from 'react';
 import backgroundImage from '../assets/uni.jpg';
 import { useAuth } from '../context/authContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Login = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  // const [email, setEmail] = useState('')
+  // const [password, setPassword] = useState('')
+  const [successMessage, setSuccessMessage] = useState('');
+  const location = useLocation();
   const [error, setError] =  useState(null)
   const {login} = useAuth()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("Submitting: ", { email, password }); // Debugging log
-    try{
-        const response =  await axios.post(
-          "http://localhost:5000/api/auth/login",
-         {email,password}
-        );
-        console.log("Response: ", response.data); // Debugging log
-
-        if (response.data.success){
-          login(response.data.user)
-          localStorage.setItem("token", response.data.token)
-          if (response.data.user.role === "admin"){
-            navigate("/admin-dashboard")
-          }else{
-            navigate("/user-dashboard")
-          }
-          alert("Login Sucessfull")
-        }
-    }catch (error) {
-      console.error("Error Response: ", error.response || error.message);
-      setError(
-        error.response?.data?.error ||
-        (error.code === 'ERR_NETWORK' ? 'Cannot connect to server. Is it running?' : 'Server Error')
-      );
+  // Add useEffect to check for verified query parameter
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    if (query.get('verified') === 'true') {
+      setSuccessMessage('Email verified! Please log in.');
     }
+  }, [location]);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log("Form Data:", formData); // Log what’s being sent
+    try {
+      const response = await axios.post("http://localhost:5000/api/auth/login", formData);
+      console.log("Response:", response.data); // Log the response
+      if (response.data.success) {
+        const { token, user } = response.data;
+        console.log("Stored Token:", token); // Add this
+        localStorage.setItem("token", token); // Store the token
+        console.log("Token After Set:", localStorage.getItem("token"));
+        console.log("Before login(user, token):", localStorage.getItem("token"));
+        login(user, token); // Update auth context
+        console.log("After login(user, token):", localStorage.getItem("token"));
+        alert("Login Successful!");
+        setTimeout(() => {
+          console.log("Token Before Navigate:", localStorage.getItem("token"));
+        navigate(user.role === "admin" ? "/admin-dashboard" : "/make-payment");
+        }, 2000);
+      }
+    } catch (error) {
+      setError(error.response?.data?.error || "Login failed!");
+    }
+  };
+ 
 
   return (
     <div className="flex min-h-screen overflow-hidden relative">
@@ -55,6 +66,12 @@ const Login = () => {
         <div className="bg-white bg-opacity-90 p-8 rounded-lg max-w-md w-full">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">FeeStream</h2>
           <p className="text-gray-600 mb-6">Login into your account</p>
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
+              {successMessage}
+            </div>
+          )}
+
           {error && <p className='text-red-500'>{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative flex items-center border border-gray-300 rounded-md">
@@ -62,8 +79,12 @@ const Login = () => {
             <hr className="h-6 border-l border-gray-300" />
             <input
               type="email"
+              name="email"
               placeholder="Enter Email Address"
-              onChange={(e) => setEmail(e.target.value)}
+              value={formData.email}
+              onChange={handleChange}
+              required
+             // onChange={(e) => setEmail(e.target.value)}
               className="w-full p-2 pl-4 border-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
           </div>
@@ -73,8 +94,10 @@ const Login = () => {
               <hr className="h-6 border-l border-gray-300" />
               <input
                 type="password"
+                name="password"
                 placeholder="Enter your password"
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                 onChange={handleChange}
                 required
                 className="w-full *p-2 pl-4 border-none focus:outline-none focus:ring-2 focus:ring-yellow-500"
               />

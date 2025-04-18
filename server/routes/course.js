@@ -4,6 +4,6 @@ import { getCourses } from '../controllers/courseController.js';
 
 const router = express.Router();
 
-router.get('/', getCourses); // This means: GET /api/courses/
+router.get('/get', getCourses); // This means: GET /api/courses/
 
 export default router;
