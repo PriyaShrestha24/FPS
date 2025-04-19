@@ -1,7 +1,8 @@
 import express from 'express'
-import { login, verify, signup, getAllUsers, updateUser, deleteUser, verifyEmail, resendVerification } from '../controllers/authController.js'
+import { login, verify, signup, getAllUsers, updateUser, deleteUser, verifyEmail, resendVerification, getCourses, changePassword } from '../controllers/authController.js'
 import { EsewaInitiatePayment, paymentStatus, getUserTransactions, getFeeSummary } from '../controllers/esewaController.js'
-import authMiddleware from '../middleware/authMiddleware.js'
+import authMiddleware from '../middleware/authMiddleware.js';
+import {admin} from '../middleware/authMiddleware.js';
 
 const router = express.Router()
 router.post('/login', (req, res) => {
@@ -19,5 +20,6 @@ router.get('/transactions', authMiddleware, getUserTransactions);
 router.get('/fee-summary',authMiddleware, getFeeSummary);
 router.get('/verify-email', verifyEmail); // Add this route
 router.post('/resend-verification', resendVerification);
+
 
 export default router;

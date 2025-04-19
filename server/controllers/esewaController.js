@@ -85,7 +85,7 @@ const EsewaInitiatePayment = async (req, res) => {
       const transaction = new Transaction({
         product_id: productId,
         amount: parsedAmount,
-        user_id: user._id,
+        user: user._id,
         year: year,
       });
       await transaction.save();
@@ -131,7 +131,7 @@ const paymentStatus = async (req, res) => {
 
     const transaction = await Transaction.findOne({
       product_id,
-      user_id: userId,
+      user: userId,
     });
 
     if (!transaction) {
@@ -186,7 +186,7 @@ const getFeeSummary = async (req, res) => {
         return res.status(400).json({ message: "User does not have a program assigned or fees are not defined." });
       }
 
-    const transactions = await Transaction.find({ user_id: user._id });
+    const transactions = await Transaction.find({ user: user._id });
     const summary = [];
 
     // Calculate paid and remaining amounts for each year
@@ -230,7 +230,7 @@ const getUserTransactions = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const transactions = await Transaction.find({ user_id: req.userData._id })
+    const transactions = await Transaction.find({ user: req.userData._id })
       .sort({ createdAt: -1 }) // Sort by creation date, newest first
       .skip(skip)
       .limit(limit)
@@ -251,5 +251,7 @@ const getUserTransactions = async (req, res) => {
 
 
 };
+
+
 
 export { EsewaInitiatePayment, paymentStatus, getUserTransactions, getFeeSummary };

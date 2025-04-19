@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import backgroundImage from "../assets/uni.jpg"; // Background Image
 
+
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 
 const Signup = () => {

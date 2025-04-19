@@ -17,7 +17,7 @@ const transactionSchema = new mongoose.Schema(
       enum: ["PENDING", "COMPLETE", "FAILED", "REFUNDED"],
       default: "PENDING",
     },
-    user_id: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,

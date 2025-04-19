@@ -6,6 +6,8 @@ import connectToDatabase from './db/db.js';
 import courseRoutes from './routes/course.js';
 import universityRoutes from './routes/university.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import transactionRoutes from './routes/transactionRoutes.js'; // Import transaction routes
+import reportRoutes from './routes/reportRoutes.js'; // Import report routes
 import { scheduleFeeReminders } from './utils/cronJobs.js'; // Import cron job
 
 connectToDatabase();
@@ -23,6 +25,8 @@ console.log("Auth routes mounted at /api/auth");
 app.use('/api/courses', courseRoutes);
 app.use('/api/universities', universityRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Start the cron jobs for automatic fee reminders
 scheduleFeeReminders();

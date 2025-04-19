@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import bcrypt from 'bcrypt';
 import Course from '../models/Course.js';
-import Notification from '../models/Notification.js';
 import crypto from 'crypto';
 import { sendVerificationEmail } from '../utils/email.js';
 
@@ -49,6 +48,7 @@ export const login = async (req, res) => {
         program: user.program,
         university: user.university,
         emailVerified: user.emailVerified,
+        dueDates: user.dueDates,
       },
     });
   } catch (error) {
@@ -73,6 +73,7 @@ export const verify = async (req, res) => {
         program: user.program,
         university: user.university,
         emailVerified: user.emailVerified,
+        dueDates: user.dueDates,
       },
     });
   } catch (error) {
@@ -84,6 +85,11 @@ export const verify = async (req, res) => {
 export const signup = async (req, res) => {
   try {
     const { name, email, password, role, studentId, program, university, year } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !password || !university || !program || !year) {
+      return res.status(400).json({ success: false, error: 'All fields are required' });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -101,6 +107,44 @@ export const signup = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationTokenExpires = Date.now() + 3600000;
 
+    // Fetch the course to determine the duration and set due dates
+    // let dueDates = [];
+    // if (role === 'student') {
+    //   const course = await Course.findById(program);
+    //   if (!course) {
+    //     return res.status(400).json({ success: false, error: 'Course not found' });
+    //   }
+    
+    // // Set due dates one year apart, starting from 4/15 of the next year
+    // const baseDate = new Date(2025, 3, 15); // April 15, 2025
+    //   for (let i = 1; i <= course.duration; i++) {
+    //     const dueDate = new Date(baseDate);
+    //     dueDate.setFullYear(2025 + (i - 1));
+    //     dueDates.push({
+    //       year: `${i}${i === 1 ? 'st' : i === 2 ? 'nd' : i === 3 ? 'rd' : 'th'} Year`,
+    //       dueDate,
+    //     });
+    //   }
+    // }
+
+    // Fetch course to determine duration and set due dates
+    const course = await Course.findById(program);
+    if (!course) {
+      return res.status(400).json({ success: false, error: 'Invalid course' });
+    }
+
+    // Generate default due dates based on course duration
+    const dueDates = [];
+    const currentYear = new Date().getFullYear();
+    for (let i = 1; i <= course.duration; i++) {
+      const yearLabel = `${i}${i === 1 ? 'st' : i === 2 ? 'nd' : i === 3 ? 'rd' : 'th'} Year`;
+      // Set due date to June 1st of the current or future year
+      dueDates.push({
+        year: yearLabel,
+        dueDate: new Date(currentYear + i - 1, 5, 1), // June 1st
+      });
+    }
+
     const newUser = new User({
       name,
       email,
@@ -113,6 +157,7 @@ export const signup = async (req, res) => {
       emailVerified: false,
       verificationToken,
       verificationTokenExpires,
+      dueDates,
     });
 
     await newUser.save();
@@ -148,6 +193,7 @@ export const signup = async (req, res) => {
         program: populatedUser.program,
         university: populatedUser.university,
         emailVerified: populatedUser.emailVerified,
+        dueDates: populatedUser.dueDates,
       },
     });
   } catch (error) {
@@ -218,79 +264,23 @@ export const resendVerification = async (req, res) => {
   }
 };
 
-export const sendFeeReminder = async (req, res) => {
+export const changePassword = async (req, res) => {
   try {
-    const { message, recipients } = req.body;
-    // Use req.user for the decoded token data
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user._id);
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'Current password is incorrect' });
     }
-
-    if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
-      return res.status(400).json({ success: false, error: 'No recipients provided' });
-    }
-
-    const students = await User.find({ _id: { $in: recipients }, role: 'student' });
-    if (students.length === 0) {
-      return res.status(404).json({ success: false, error: 'No valid students found' });
-    }
-
-    const notifications = [];
-    for (const student of students) {
-      const notification = new Notification({
-        userId: student._id,
-        message,
-      });
-      await notification.save();
-      notifications.push(notification);
-
-      try {
-        await sendVerificationEmail(student.email, null, 'Fee Payment Reminder', message);
-      } catch (emailError) {
-        console.error(`Error sending email to ${student.email}:`, emailError);
-      }
-    }
-
-    res.status(200).json({ success: true, message: 'Notifications sent successfully' });
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+    res.json({ success: true, message: 'Password updated' });
   } catch (error) {
-    console.error('Send Fee Reminder Error:', error);
-    res.status(500).json({ success: false, error: error.message || 'Server error' });
-  }
-};
-
-export const getNotifications = async (req, res) => {
-  try {
-    // Use req.user for the decoded token data
-    const userId = req.user._id;
-    const notifications = await Notification.find({ userId })
-      .sort({ createdAt: -1 })
-      .limit(10);
-
-    res.status(200).json({ success: true, notifications });
-  } catch (error) {
-    console.error('Get Notifications Error:', error);
-    res.status(500).json({ success: false, error: error.message || 'Server error' });
-  }
-};
-
-export const markNotificationAsRead = async (req, res) => {
-  try {
-    const { notificationId } = req.body;
-    // Use req.user for the decoded token data
-    const userId = req.user._id;
-
-    const notification = await Notification.findOne({ _id: notificationId, userId });
-    if (!notification) {
-      return res.status(404).json({ success: false, error: 'Notification not found' });
-    }
-
-    notification.read = true;
-    await notification.save();
-
-    res.status(200).json({ success: true, message: 'Notification marked as read' });
-  } catch (error) {
-    console.error('Mark Notification Read Error:', error);
-    res.status(500).json({ success: false, error: error.message || 'Server error' });
+    console.error('ChangePassword Error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 };
 
@@ -317,10 +307,10 @@ export const getAllUsers = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   try {
-    const { userId, name, email, role, studentId, program, year } = req.body;
+    const { userId, name, email, role, studentId, program, year, dueDates } = req.body;
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { name, email, role, studentId, program, year },
+      { name, email, role, studentId, program, year, dueDates },
       { new: true, runValidators: true }
     ).select('-password');
     if (!updatedUser) return res.status(404).json({ success: false, error: 'User not found' });
@@ -341,3 +331,48 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ success: false, error: 'Server error' });
   }
 };
+
+// export const getFeeSummary = async (req, res) => {
+//   try {
+//     if (!req.userData || !req.userData._id) {
+//       return res.status(401).json({ message: "User not authenticated. Please log in." });
+//     }
+
+//     const user = req.userData;
+//     const yearlyFees = user.program.yearlyFees instanceof Map
+//       ? Object.fromEntries(user.program.yearlyFees.entries())
+//       : user.program.yearlyFees;
+
+//     if (!user.program || !yearlyFees) {
+//       return res.status(400).json({ message: "User does not have a program assigned or fees are not defined." });
+//     }
+
+//     const transactions = await Transaction.find({ user_id: user._id });
+//     const summary = [];
+//     for (let year = 1; year <= user.program.duration; year++) {
+//       const yearLabel = `${year}${year === 1 ? 'st' : year === 2 ? 'nd' : year === 3 ? 'rd' : 'th'} Year`;
+//       const totalFee = yearlyFees[year] || 0; // Adjusted to match the Course.yearlyFees keys
+//       const completedTransactions = transactions.filter(
+//         (tx) => tx.year === yearLabel && tx.status === "COMPLETE"
+//       );
+//       const paidAmount = completedTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+//       const remainingAmount = totalFee - paidAmount;
+
+//       // Use dueDates from the User model
+//       const dueDateEntry = user.dueDates.find((d) => d.year === yearLabel);
+//       const dueDate = dueDateEntry ? dueDateEntry.dueDate : new Date();
+
+//       summary.push({
+//         year: yearLabel,
+//         totalFee,
+//         paidAmount,
+//         remainingAmount,
+//         dueDate,
+//       });
+//     }
+//     res.status(200).json({ success: true, summary });
+//   } catch (error) {
+//     console.error("GetFeeSummary Error:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };

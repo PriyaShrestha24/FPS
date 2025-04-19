@@ -22,7 +22,12 @@ const userSchema = new mongoose.Schema(
         status: { type: String, enum: ["Pending", "Completed", "Failed"], default: "Pending" },
       },
     ],
-    feeDueDate: { type: Date },
+    dueDates: [
+      {
+        year: { type: String, required: true }, // e.g., "1st Year", "2nd Year"
+        dueDate: { type: Date, required: true }, // Due date for that year
+      },
+    ],
     createAt: {type: Date, default: Date.now},
     updatesAt: {type: Date, default: Date.now}
   },
