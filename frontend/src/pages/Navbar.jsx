@@ -13,30 +13,42 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch notifications when a student logs in
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (user && user.role === 'student') {
-        try {
-          const token = localStorage.getItem("token");
-          if (!token) return;
+  const fetchNotifications = async () => {
+    if (user && user.role === 'student') {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-          const response = await axios.get("http://localhost:5000/api/notifications/get", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+        const response = await axios.get("http://localhost:5000/api/notifications/get", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-          if (response.data.success) {
-            const fetchedNotifications = response.data.notifications;
-            setNotifications(fetchedNotifications);
-            setUnreadCount(fetchedNotifications.filter(n => !n.read).length);
-          }
-        } catch (error) {
-          console.error("Fetch Notifications Error:", error);
+        if (response.data.success) {
+          const fetchedNotifications = response.data.notifications;
+          setNotifications(fetchedNotifications);
+          setUnreadCount(fetchedNotifications.filter(n => !n.read).length);
         }
+      } catch (error) {
+        console.error("Fetch Notifications Error:", error);
       }
-    };
+    }
+  };
 
-    fetchNotifications();
+  // Fetch notifications when a student logs in and set up periodic refresh
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000); // Refresh every 30 seconds
+      
+      // Add event listener for manual refresh
+      const handleRefresh = () => fetchNotifications();
+      document.querySelector('nav').addEventListener('refreshNotifications', handleRefresh);
+      
+      return () => {
+        clearInterval(interval);
+        document.querySelector('nav').removeEventListener('refreshNotifications', handleRefresh);
+      };
+    }
   }, [user]);
 
   // Redirect after login based on role
@@ -263,7 +275,8 @@ const Navbar = () => {
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 300 }}
               >
-                <Link to="/profile">
+                
+                <Link to={user.role === 'admin' ? '/admin-dashboard' : '/profile'}>
                   <div className="w-10 h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center text-base font-semibold hover:bg-yellow-600 transition-colors duration-300 shadow-sm">
                     {getInitials(user.name)}
                   </div>
