@@ -107,27 +107,7 @@ export const signup = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationTokenExpires = Date.now() + 3600000;
 
-    // Fetch the course to determine the duration and set due dates
-    // let dueDates = [];
-    // if (role === 'student') {
-    //   const course = await Course.findById(program);
-    //   if (!course) {
-    //     return res.status(400).json({ success: false, error: 'Course not found' });
-    //   }
-    
-    // // Set due dates one year apart, starting from 4/15 of the next year
-    // const baseDate = new Date(2025, 3, 15); // April 15, 2025
-    //   for (let i = 1; i <= course.duration; i++) {
-    //     const dueDate = new Date(baseDate);
-    //     dueDate.setFullYear(2025 + (i - 1));
-    //     dueDates.push({
-    //       year: `${i}${i === 1 ? 'st' : i === 2 ? 'nd' : i === 3 ? 'rd' : 'th'} Year`,
-    //       dueDate,
-    //     });
-    //   }
-    // }
-
-    // Fetch course to determine duration and set due dates
+  
     const course = await Course.findById(program);
     if (!course) {
       return res.status(400).json({ success: false, error: 'Invalid course' });

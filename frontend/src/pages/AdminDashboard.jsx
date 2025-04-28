@@ -60,6 +60,10 @@ const AdminDashboard = () => {
     yearlyFees: {}
   });
   const [showAddCourseForm, setShowAddCourseForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUniversity, setSelectedUniversity] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [years] = useState(['1st Year', '2nd Year', '3rd Year', '4th Year']);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== 'admin')) {
@@ -838,6 +842,48 @@ const AdminDashboard = () => {
               {activeTab === 'users' && (
             <div className="bg-white shadow-lg rounded-lg p-6">
                   <h2 className="text-2xl font-bold mb-6 text-gray-800">User Management</h2>
+                  
+                  {/* Search and Filter Controls */}
+                  <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-2">
+                      <input
+                        type="text"
+                        placeholder="Search users by name, email, or role..."
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <select
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        value={selectedUniversity}
+                        onChange={(e) => setSelectedUniversity(e.target.value)}
+                      >
+                        <option value="">All Universities</option>
+                        {universities.map((uni) => (
+                          <option key={uni._id} value={uni._id}>
+                            {uni.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <select
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                      >
+                        <option value="">All Years</option>
+                        {years.map((year) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
                   {isFetching && <p className="text-gray-600 mb-4">Loading users...</p>}
               {fetchError && <p className="text-red-500 mb-4">Error: {fetchError}</p>}
               {!isFetching && !fetchError && users.length === 0 && (
@@ -858,7 +904,30 @@ const AdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {users.map((user) => (
+                      {users
+                        .filter(user => {
+                          // Text search filter
+                          const matchesSearch = 
+                            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            user.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (user.university?.name && user.university.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                            (user.program?.name && user.program.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                            (user.year && user.year.toLowerCase().includes(searchTerm.toLowerCase()));
+                          
+                          // University filter
+                          const matchesUniversity = 
+                            !selectedUniversity || 
+                            (user.university && user.university._id === selectedUniversity);
+                          
+                          // Year filter
+                          const matchesYear = 
+                            !selectedYear || 
+                            user.year === selectedYear;
+                          
+                          return matchesSearch && matchesUniversity && matchesYear;
+                        })
+                        .map((user) => (
                         <tr key={user._id} className="border-b hover:bg-gray-50">
                           <td className="px-6 py-4 text-base text-gray-700">{user.name}</td>
                           <td className="px-6 py-4 text-base text-gray-700">{user.email}</td>
@@ -1257,7 +1326,7 @@ const AdminDashboard = () => {
                           Select Students
                         </label>
                         <div className="flex justify-between items-center mb-2">
-                          <button
+                  <button
                             type="button"
                             onClick={() => {
                               const allStudentIds = users
@@ -1268,7 +1337,7 @@ const AdminDashboard = () => {
                             className="text-sm text-yellow-600 hover:text-yellow-800 font-medium"
                           >
                             Select All Students
-                          </button>
+                  </button>
                           {selectedStudents.length > 0 && (
                             <button
                               type="button"
@@ -1277,8 +1346,8 @@ const AdminDashboard = () => {
                             >
                               Clear Selection
                             </button>
-                          )}
-                        </div>
+                  )}
+                </div>
                         <div className="max-h-60 overflow-y-auto border border-gray-300 rounded px-4 py-2">
                           {users.filter(user => user.role === 'student').map(student => (
                             <div key={student._id} className="flex items-center py-2">

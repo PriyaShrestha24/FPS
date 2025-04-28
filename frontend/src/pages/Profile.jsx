@@ -45,6 +45,10 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUser, setEditedUser] = useState(null);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [updateError, setUpdateError] = useState(null);
 
   useEffect(() => {
     // Initialize AOS
@@ -108,6 +112,72 @@ const Profile = () => {
     logout();
     navigate("/login");
     toast.success("Logged out successfully!");
+  };
+
+  const handleEditProfile = () => {
+    setEditedUser({
+      name: user.name,
+      email: user.email,
+      phone: user.phone || "",
+      studentId: user.studentId || "",
+      year: user.year || ""
+    });
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedUser(null);
+    setUpdateError(null);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditedUser({
+      ...editedUser,
+      [name]: value
+    });
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      setUpdateError(null);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setUpdateError("No token found. Please log in again.");
+        return;
+      }
+
+      const response = await axios.put(
+        'http://localhost:5000/api/auth/users/update',
+        {
+          userId: user._id,
+          name: editedUser.name,
+          email: editedUser.email,
+          studentId: editedUser.studentId,
+          year: editedUser.year,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        setUpdateSuccess(true);
+        setIsEditing(false);
+        toast.success("Profile updated successfully!");
+        
+        // Update the user context with the new data
+        const updatedUser = { ...user, ...editedUser };
+        // This assumes your auth context has a method to update the user
+        // If not, you might need to refresh the page or implement a context update method
+        window.location.reload(); // Simple refresh to get updated data
+      }
+    } catch (err) {
+      console.error("Update Profile Error:", err);
+      setUpdateError(err.response?.data?.error || "Failed to update profile. Please try again.");
+      toast.error("Failed to update your profile. Please try again later.");
+    }
   };
 
   if (loading) {
@@ -456,30 +526,148 @@ const Profile = () => {
 
           {activeTab === "profile" && (
             <div className="bg-white shadow-lg rounded-lg p-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">Profile Details</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Profile Details</h2>
+                {!isEditing && (
+                  <button
+                    onClick={handleEditProfile}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
+                  >
+                    Edit Profile
+                  </button>
+                )}
+              </div>
+              
+              {updateSuccess && (
+                <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md">
+                  <p>Your profile has been updated successfully!</p>
+                </div>
+              )}
+              
+              {updateError && (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md">
+                  <p>{updateError}</p>
+                </div>
+              )}
+              
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Personal Information</h3>
-                    <div className="space-y-2">
+                    {isEditing ? (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                          <input
+                            type="text"
+                            name="name"
+                            value={editedUser.name}
+                            onChange={handleInputChange}
+                            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            name="email"
+                            value={editedUser.email}
+                            onChange={handleInputChange}
+                            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                          />
+                        </div>
+                <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                          <input
+                            type="text"
+                            name="phone"
+                            value={editedUser.phone}
+                            onChange={handleInputChange}
+                            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
                   <p><span className="font-semibold">Name:</span> {user.name}</p>
                   <p><span className="font-semibold">Email:</span> {user.email}</p>
-                      <p><span className="font-semibold">Phone:</span> {user.phone || "N/A"}</p>
-                    </div>
+                        <p><span className="font-semibold">Phone:</span> {user.phone || "N/A"}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Academic Information</h3>
-                    <div className="space-y-2">
-                      <p><span className="font-semibold">University:</span> {user.university?.name || "N/A"}</p>
+                    {isEditing ? (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Student ID</label>
+                          <input
+                            type="text"
+                            name="studentId"
+                            value={editedUser.studentId}
+                            onChange={handleInputChange}
+                            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                          <input
+                            type="text"
+                            name="year"
+                            value={editedUser.year}
+                            onChange={handleInputChange}
+                            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
+                          <input
+                            type="text"
+                            value={user.university?.name || "N/A"}
+                            disabled
+                            className="w-full border border-gray-300 rounded px-4 py-2 bg-gray-100"
+                          />
+                </div>
+                <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Program</label>
+                          <input
+                            type="text"
+                            value={user.program?.name || "N/A"}
+                            disabled
+                            className="w-full border border-gray-300 rounded px-4 py-2 bg-gray-100"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p><span className="font-semibold">University:</span> {user.university?.name || "N/A"}</p>
                   <p><span className="font-semibold">Program:</span> {user.program?.name || "N/A"}</p>
-                      <p><span className="font-semibold">Year:</span> {user.year || "N/A"}</p>
-                      <p><span className="font-semibold">Student ID:</span> {user.studentId || "N/A"}</p>
-                    </div>
+                        <p><span className="font-semibold">Year:</span> {user.year || "N/A"}</p>
+                        <p><span className="font-semibold">Student ID:</span> {user.studentId || "N/A"}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+              
+              {isEditing && (
+                <div className="flex justify-end space-x-4 mt-6">
+                  <button
+                    onClick={handleCancelEdit}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition duration-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateProfile}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
