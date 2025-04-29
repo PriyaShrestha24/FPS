@@ -287,15 +287,43 @@ export const getAllUsers = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   try {
-    const { userId, name, email, role, studentId, program, year, dueDates } = req.body;
+    const { userId, name, email, role, studentId, university, program, year, dueDates } = req.body;
+    
+    // Find the user first to check if they exist
+    const existingUser = await User.findById(userId);
+    if (!existingUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Update the user with all fields
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { name, email, role, studentId, program, year, dueDates },
-      { new: true, runValidators: true }
-    ).select('-password');
-    if (!updatedUser) return res.status(404).json({ success: false, error: 'User not found' });
+      { 
+        name, 
+        email, 
+        role, 
+        studentId, 
+        university, 
+        program, 
+        year, 
+        dueDates 
+      },
+      { 
+        new: true, 
+        runValidators: true 
+      }
+    )
+    .select('-password')
+    .populate('program')
+    .populate('university');
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, error: 'Failed to update user' });
+    }
+
     res.status(200).json({ success: true, user: updatedUser });
   } catch (error) {
+    console.error('Update User Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

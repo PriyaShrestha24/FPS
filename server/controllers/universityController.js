@@ -137,3 +137,38 @@ export const updateUniversity = async (req, res) => {
     res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 };
+
+export const deleteUniversity = async (req, res) => {
+  try {
+    console.log('Delete University Request:', {
+      params: req.params,
+      body: req.body,
+      headers: req.headers
+    });
+    
+    const { universityId } = req.params;
+    
+    if (!universityId) {
+      console.log('University ID missing in request');
+      return res.status(400).json({ success: false, error: 'University ID is required' });
+    }
+
+    console.log('Attempting to delete university with ID:', universityId);
+    const university = await University.findByIdAndDelete(universityId);
+    
+    if (!university) {
+      console.log('University not found with ID:', universityId);
+      return res.status(404).json({ success: false, error: 'University not found' });
+    }
+
+    console.log('University deleted successfully:', university);
+    res.status(200).json({ success: true, message: 'University deleted successfully' });
+  } catch (error) {
+    console.error('DeleteUniversity Error:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code
+    });
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
