@@ -28,7 +28,11 @@ const AdminDashboard = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [passwordStatus, setPasswordStatus] = useState(null);
-  const [newUniversity, setNewUniversity] = useState('');
+  const [newUniversity, setNewUniversity] = useState({
+    name: '',
+    code: '',
+    location: ''
+  });
   const [newCourse, setNewCourse] = useState({
     name: '',
     code: '',
@@ -388,13 +392,13 @@ const AdminDashboard = () => {
 
   const handleAddUniversity = async (e) => {
     e.preventDefault();
-    if (!newUniversity.trim()) {
+    if (!newUniversity.name || !newUniversity.name.trim()) {
       toast.error('University name is required');
       return;
     }
     
     // Normalize the university name
-    const normalizedName = newUniversity.trim();
+    const normalizedName = newUniversity.name.trim();
     
     // Check if university name already exists in the current list
     const universityExists = universities.some(
@@ -418,11 +422,14 @@ const AdminDashboard = () => {
       console.log('Sending request to add university:', normalizedName);
       const response = await axios.post(
         'http://localhost:5000/api/universities/add',
-        { name: normalizedName },
+        {
+          name: normalizedName,
+          code: newUniversity.code,
+          location: newUniversity.location
+        },
         { 
           headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${token}`
           } 
         }
       );
@@ -430,7 +437,11 @@ const AdminDashboard = () => {
       console.log('Response from server:', response.data);
       if (response.data.success) {
         setUniversities([...universities, response.data.university]);
-        setNewUniversity('');
+        setNewUniversity({
+          name: '',
+          code: '',
+          location: ''
+        });
         toast.success(`University "${normalizedName}" added successfully with code "${response.data.university.code}"`);
       }
     } catch (error) {
@@ -462,45 +473,35 @@ const AdminDashboard = () => {
 
   const handleAddCourse = async (e) => {
     e.preventDefault();
-    if (!newCourse.name || !newCourse.code || !newCourse.duration) {
-      toast.error('All course fields are required');
+    try {
+      if (!newCourse.name || !newCourse.code || !newCourse.duration || !newCourse.university || !newCourse.yearlyFees) {
+        setError('All fields are required');
       return;
     }
 
-    try {
       const token = localStorage.getItem('token');
-      const yearlyFees = {};
-      for (let i = 1; i <= parseInt(newCourse.duration); i++) {
-        const yearLabel = `${i}${i === 1 ? 'st' : i === 2 ? 'nd' : i === 3 ? 'rd' : 'th'} Year`;
-        yearlyFees[yearLabel] = newCourse.yearlyFees[yearLabel] || 0;
-      }
-
       const response = await axios.post(
         'http://localhost:5000/api/courses/add',
-        {
-          name: newCourse.name,
-          code: newCourse.code,
-          duration: parseInt(newCourse.duration),
-          yearlyFees,
-          university: editingUniversity._id
-        },
+        newCourse,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
-        setCourses([...courses, response.data.course]);
-        setShowAddCourseForm(false);
+        // Update courses state by appending the new course to the existing courses array
+        setCourses(prevCourses => [...prevCourses, response.data.course]);
         setNewCourse({
           name: '',
           code: '',
           duration: '',
+          university: '',
           yearlyFees: {}
         });
+        setShowAddCourseForm(false);
         toast.success('Course added successfully');
       }
     } catch (error) {
       console.error('Add Course Error:', error);
-      toast.error(error.response?.data?.error || 'Failed to add course');
+      setError(error.response?.data?.message || 'Failed to add course');
     }
   };
 
@@ -699,6 +700,39 @@ const AdminDashboard = () => {
         });
         toast.error(error.response?.data?.error || 'Failed to delete course');
       }
+    }
+  };
+
+  const handleDeleteUniversity = async (universityId) => {
+    if (!window.confirm('Are you sure you want to delete this university? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Attempting to delete university:', universityId);
+      console.log('Using token:', token);
+      
+      const response = await axios.delete(`http://localhost:5000/api/universities/${universityId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Delete response:', response.data);
+      
+      if (response.data.success) {
+        setUniversities(universities.filter(uni => uni._id !== universityId));
+        toast.success('University deleted successfully');
+      }
+    } catch (error) {
+      console.error('Delete University Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      toast.error(error.response?.data?.error || 'Failed to delete university');
     }
   };
 
@@ -1116,7 +1150,7 @@ const AdminDashboard = () => {
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                   {courses
-                                    .filter(course => course.university._id === editingUniversity._id)
+                                    .filter(course => course.university && course.university._id === editingUniversity._id)
                                     .map((course) => (
                                       <tr key={course._id}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{course.name}</td>
