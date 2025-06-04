@@ -84,10 +84,10 @@ export const verify = async (req, res) => {
 
 export const signup = async (req, res) => {
   try {
-    const { name, email, password, role, studentId, program, university, year } = req.body;
+    const { name, email, password, role, studentId, program, university } = req.body;
 
     // Validate required fields
-    if (!name || !email || !password || !university || !program || !year) {
+    if (!name || !email || !password || !university || !program) {
       return res.status(400).json({ success: false, error: 'All fields are required' });
     }
 
@@ -133,7 +133,7 @@ export const signup = async (req, res) => {
       studentId: role === 'student' ? studentId : undefined,
       university: role === 'student' ? university : undefined,
       program: role === 'student' ? program : undefined,
-      year: role === 'student' ? year : undefined,
+      year: role === 'student' ? '1st Year' : undefined, // Default to 1st Year for students
       emailVerified: false,
       verificationToken,
       verificationTokenExpires,
@@ -339,48 +339,3 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ success: false, error: 'Server error' });
   }
 };
-
-// export const getFeeSummary = async (req, res) => {
-//   try {
-//     if (!req.userData || !req.userData._id) {
-//       return res.status(401).json({ message: "User not authenticated. Please log in." });
-//     }
-
-//     const user = req.userData;
-//     const yearlyFees = user.program.yearlyFees instanceof Map
-//       ? Object.fromEntries(user.program.yearlyFees.entries())
-//       : user.program.yearlyFees;
-
-//     if (!user.program || !yearlyFees) {
-//       return res.status(400).json({ message: "User does not have a program assigned or fees are not defined." });
-//     }
-
-//     const transactions = await Transaction.find({ user_id: user._id });
-//     const summary = [];
-//     for (let year = 1; year <= user.program.duration; year++) {
-//       const yearLabel = `${year}${year === 1 ? 'st' : year === 2 ? 'nd' : year === 3 ? 'rd' : 'th'} Year`;
-//       const totalFee = yearlyFees[year] || 0; // Adjusted to match the Course.yearlyFees keys
-//       const completedTransactions = transactions.filter(
-//         (tx) => tx.year === yearLabel && tx.status === "COMPLETE"
-//       );
-//       const paidAmount = completedTransactions.reduce((sum, tx) => sum + tx.amount, 0);
-//       const remainingAmount = totalFee - paidAmount;
-
-//       // Use dueDates from the User model
-//       const dueDateEntry = user.dueDates.find((d) => d.year === yearLabel);
-//       const dueDate = dueDateEntry ? dueDateEntry.dueDate : new Date();
-
-//       summary.push({
-//         year: yearLabel,
-//         totalFee,
-//         paidAmount,
-//         remainingAmount,
-//         dueDate,
-//       });
-//     }
-//     res.status(200).json({ success: true, summary });
-//   } catch (error) {
-//     console.error("GetFeeSummary Error:", error);
-//     res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// };

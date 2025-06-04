@@ -16,7 +16,7 @@ const Signup = () => {
         studentId: "",
         university: "",
         program: "",
-        year: "",
+        year: "1st Year",
         confirmPassword: "",
     });
 
@@ -230,7 +230,7 @@ const Signup = () => {
                             </select>
                         </div>
 
-                        <div>
+                        {/* <div>
                             <label className="block text-sm font-medium text-gray-700">Year</label>
                             <select
                                 name="year"
@@ -244,7 +244,7 @@ const Signup = () => {
                                     <option key={index} value={year}>{year}</option>
                                 ))}
                             </select>
-                        </div>
+                        </div> */}
 
                         {formData.role === "student" && (
                             <>
